@@ -211,11 +211,26 @@ def _validate_record(value):
             "record_sha256": _sha256(value["record_sha256"], "record_sha256")}
 
 
+MAX_ALLOWLIST = 256
+
+
+def _validate_allowlist(value):
+    """Reviewed-benign file globs: a list of short gitignore-style patterns. A hit in
+    a matching file is reported as allowed, not as an alert."""
+    if not isinstance(value, list) or len(value) > MAX_ALLOWLIST:
+        raise SkyWatchError("Invalid allowlist")
+    for pattern in value:
+        if not isinstance(pattern, str) or not pattern.strip() or len(pattern) > 400 or "\x00" in pattern:
+            raise SkyWatchError("Each allowlist pattern must be a short glob string")
+    return value
+
+
 def _validate_watchlist(data):
     fields = {"schema", "watch_id", "title", "created_utc", "revision",
-              "previous_envelope_sha256", "terms", "journal"}
+              "previous_envelope_sha256", "terms", "journal", "allowlist"}
     if not isinstance(data, dict) or set(data) != fields or type(data["schema"]) is not int or data["schema"] != 1:
         raise SkyWatchError("Unsupported encrypted watchlist schema")
+    _validate_allowlist(data["allowlist"])
     _text(data["title"], "watchlist title", 200)
     _uuid(data["watch_id"], "watchlist identifier")
     _timestamp(data["created_utc"], "created_utc")
@@ -253,13 +268,21 @@ def _validate_watchlist(data):
 
 # --- Load / write ------------------------------------------------------------
 
+def _migrate(data):
+    """Bring an older watchlist forward in memory. The allowlist arrived in v0.2; a
+    watchlist that predates it gets an empty one. The journal is unaffected."""
+    if isinstance(data, dict) and "allowlist" not in data:
+        data["allowlist"] = []
+    return data
+
+
 def _load(source, secret):
     encrypted = read_regular(source, MAX_ENVELOPE)
     try:
         data = json.loads(decrypt_bytes(encrypted, secret))
     except (json.JSONDecodeError, UnicodeError, RecursionError):
         raise SkyWatchError("Encrypted watchlist does not contain valid JSON") from None
-    return _validate_watchlist(data), hashlib.sha256(encrypted).hexdigest()
+    return _validate_watchlist(_migrate(data)), hashlib.sha256(encrypted).hexdigest()
 
 
 def _write(destination, data, secret):
@@ -281,7 +304,7 @@ def _save_revision(data, previous_envelope, destination, secret):
 def create(destination, title, secret):
     data = {"schema": 1, "watch_id": str(uuid.uuid4()), "title": _text(title, "watchlist title", 200),
             "created_utc": _utc(), "revision": 0, "previous_envelope_sha256": "0" * 64,
-            "terms": [], "journal": []}
+            "terms": [], "journal": [], "allowlist": []}
     return _write(destination, data, secret)
 
 
@@ -308,6 +331,29 @@ def remove_term(source, destination, secret, term_id):
     data["terms"] = kept
     result = _save_revision(data, envelope, destination, secret)
     return dict(result, removed_term=term_id)
+
+
+def allow(source, destination, secret, pattern):
+    """Add a reviewed-benign file glob to the allowlist (writes a new revision)."""
+    data, envelope = _load(source, secret)
+    pattern = _text(pattern, "allowlist pattern", 400)
+    merged = data["allowlist"] + ([pattern] if pattern not in data["allowlist"] else [])
+    if len(merged) > MAX_ALLOWLIST:
+        raise SkyWatchError(f"An allowlist holds at most {MAX_ALLOWLIST} patterns")
+    data["allowlist"] = _validate_allowlist(sorted(set(merged)))
+    result = _save_revision(data, envelope, destination, secret)
+    return dict(result, allowlist=data["allowlist"])
+
+
+def unallow(source, destination, secret, pattern):
+    """Remove a glob from the allowlist (writes a new revision)."""
+    data, envelope = _load(source, secret)
+    kept = [p for p in data["allowlist"] if p != pattern]
+    if len(kept) == len(data["allowlist"]):
+        raise SkyWatchError("That pattern is not on the allowlist")
+    data["allowlist"] = kept
+    result = _save_revision(data, envelope, destination, secret)
+    return dict(result, allowlist=data["allowlist"])
 
 
 # --- Scanning ----------------------------------------------------------------
@@ -450,14 +496,26 @@ def scan(source, secret, target, ignore=()):
             break
     order = {"high": 0, "medium": 1, "low": 2}
     hits.sort(key=lambda h: (order[h["severity"]], h["file"], h["line"]))
+    # Allowlisted files were still scanned; their hits are reported separately and
+    # do not count toward the alert total or "clean".
+    allowlist = data["allowlist"]
+    if allowlist:
+        kept, allowed = [], []
+        for h in hits:
+            (allowed if _match_ignore(h["file"], allowlist) else kept).append(h)
+        hits = kept
+    else:
+        allowed = []
     by_sev = {s: sum(1 for h in hits if h["severity"] == s) for s in SEVERITIES}
     return {"watch_id": data["watch_id"], "title": data["title"], "revision": data["revision"],
             "target": str(root), "scanned_utc": _utc(), "files_scanned": files_scanned,
             "files_skipped": files_skipped, "hits": hits, "hit_count": len(hits), "truncated": truncated,
+            "allowed": allowed, "allowed_count": len(allowed), "allowlist": list(allowlist),
             "by_severity": by_sev, "clean": not hits,
             "basis": "A hit is a case-insensitive match of a keyword, a regular expression you wrote, or a "
-                     "file hash — it means the term appeared, not that it matters. Matching is not fuzzy or "
-                     "semantic, and skipped files were not searched."}
+                     "file hash — it means the term appeared, not that it matters. Allowlisted files are "
+                     "still scanned; their hits are shown as allowed. Matching is not fuzzy or semantic, and "
+                     "skipped files were not searched."}
 
 
 def _rel(path, root):

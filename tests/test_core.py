@@ -254,6 +254,38 @@ class SkyWatchTest(unittest.TestCase):
         with self.assertRaises(SkyWatchError):
             core.add_term(p0, self.seq(), self.SECRET, "bad", "(unclosed", kind="regex")
 
+    # ----- allowlist (v0.2) --------------------------------------------
+    def test_allowlist_moves_hits_to_allowed(self):
+        p0 = self.watchlist()
+        p1 = self.seq(); core.add_term(p0, p1, self.SECRET, "Errors", "error", severity="high")
+        report = core.scan(p1, self.SECRET, self.tree)
+        self.assertFalse(report["clean"])                 # ERROR lines in app.log
+        self.assertEqual(report["allowed_count"], 0)
+        p2 = self.seq(); res = core.allow(p1, p2, self.SECRET, "app.log")
+        self.assertIn("app.log", res["allowlist"])
+        report2 = core.scan(p2, self.SECRET, self.tree)
+        self.assertTrue(report2["clean"])                 # the only hits were in app.log
+        self.assertEqual(report2["hit_count"], 0)
+        self.assertEqual([h["file"] for h in report2["allowed"]], ["app.log", "app.log"])
+
+    def test_allow_then_unallow(self):
+        p0 = self.watchlist()
+        p1 = self.seq(); core.allow(p0, p1, self.SECRET, "*.log")
+        self.assertEqual(core._load(p1, self.SECRET)[0]["allowlist"], ["*.log"])
+        p2 = self.seq(); core.unallow(p1, p2, self.SECRET, "*.log")
+        self.assertEqual(core._load(p2, self.SECRET)[0]["allowlist"], [])
+        with self.assertRaises(SkyWatchError):
+            core.unallow(p2, self.seq(), self.SECRET, "*.log")   # no longer present
+
+    def test_pre_allowlist_watchlist_migrates(self):
+        p0 = self.watchlist()
+        data, _ = core._load(p0, self.SECRET)
+        del data["allowlist"]                              # simulate a pre-v0.2 watchlist
+        legacy = self.dir / "legacy.envywatch"
+        core.new_file(legacy, core.encrypt_bytes(core._canonical(data), self.SECRET))
+        reloaded, _ = core._load(legacy, self.SECRET)      # must not raise
+        self.assertEqual(reloaded["allowlist"], [])
+
 
 if __name__ == "__main__":
     unittest.main()
