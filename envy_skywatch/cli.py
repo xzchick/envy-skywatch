@@ -47,6 +47,8 @@ def build_parser() -> argparse.ArgumentParser:
     sc.add_argument("watchlist")
     sc.add_argument("target", help="a file or folder to scan")
     sc.add_argument("--json", action="store_true", help="emit the full hit report as JSON")
+    sc.add_argument("--ignore", action="append", default=[], metavar="GLOB",
+                    help="skip paths matching this glob (repeatable, .gitignore-style)")
 
     rec = commands.add_parser("record", help="scan and append the summary to the journal (new revision)")
     rec.add_argument("watchlist")
@@ -88,7 +90,7 @@ def _run(args) -> int:
         print(f"removed {result['removed_term']} → {result['output']} (revision {result['revision']})")
         return 0
     if args.command == "scan":
-        report = scan(args.watchlist, _passphrase(), args.target)
+        report = scan(args.watchlist, _passphrase(), args.target, ignore=args.ignore)
         if args.json:
             print(json.dumps(report, ensure_ascii=False, indent=2))
             return 0 if report["clean"] else 1
