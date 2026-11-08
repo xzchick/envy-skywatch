@@ -66,6 +66,18 @@ class CLITest(unittest.TestCase):
         self.assertEqual(code, 0)
         self.assertIn("CLEAN", out)
 
+    def test_scan_json(self):
+        base = self.dir / "w.envywatch"
+        self.invoke("init", base, "--title", "Incident")
+        p1 = self.seq()
+        self.invoke("add", base, p1, "--label", "Errors", "--pattern", "error", "--severity", "high")
+        code, out, _ = self.invoke("scan", p1, self.tree, "--json")
+        self.assertEqual(code, 1)                      # a hit -> exit 1
+        report = json.loads(out)
+        self.assertEqual(report["hit_count"], 1)
+        self.assertEqual(report["hits"][0]["file"], "a.log")
+        self.assertIn("by_severity", report)
+
     def test_record_and_inspect(self):
         base = self.dir / "w.envywatch"
         self.invoke("init", base, "--title", "Proj")
