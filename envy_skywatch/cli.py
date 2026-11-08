@@ -12,8 +12,8 @@ import json
 import sys
 
 from . import __version__
-from .core import (KINDS, SEVERITIES, SkyWatchError, add_term, check_passphrase, create,
-                   export, inspect, record_scan, remove_term, scan)
+from .core import (KINDS, SEVERITIES, SkyWatchError, add_term, allow, check_passphrase,
+                   create, export, inspect, record_scan, remove_term, scan, unallow)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -43,6 +43,17 @@ def build_parser() -> argparse.ArgumentParser:
     rm.add_argument("watchlist")
     rm.add_argument("destination", help="a new watchlist file; never overwritten")
     rm.add_argument("--term", required=True, help="the term id")
+
+    al = commands.add_parser("allow", help="mark a file glob as reviewed-benign (writes a new revision)")
+    al.add_argument("watchlist")
+    al.add_argument("destination", help="a new watchlist file; never overwritten")
+    al.add_argument("--pattern", required=True, metavar="GLOB",
+                    help="hits in files matching this glob are reported as allowed, not as alerts")
+
+    ual = commands.add_parser("unallow", help="remove a glob from the allowlist (writes a new revision)")
+    ual.add_argument("watchlist")
+    ual.add_argument("destination", help="a new watchlist file; never overwritten")
+    ual.add_argument("--pattern", required=True, metavar="GLOB")
 
     sc = commands.add_parser("scan", help="scan a file or folder (read-only; exit 1 if any hits)")
     sc.add_argument("watchlist")
@@ -90,6 +101,15 @@ def _run(args) -> int:
         result = remove_term(args.watchlist, args.destination, _passphrase(), args.term)
         print(f"removed {result['removed_term']} → {result['output']} (revision {result['revision']})")
         return 0
+    if args.command == "allow":
+        result = allow(args.watchlist, args.destination, _passphrase(), args.pattern)
+        print(f"allowlisted “{args.pattern}” ({len(result['allowlist'])} total) → {result['output']} "
+              f"(revision {result['revision']})")
+        return 0
+    if args.command == "unallow":
+        result = unallow(args.watchlist, args.destination, _passphrase(), args.pattern)
+        print(f"removed “{args.pattern}” from the allowlist → {result['output']} (revision {result['revision']})")
+        return 0
     if args.command == "scan":
         report = scan(args.watchlist, _passphrase(), args.target, ignore=args.ignore)
         if args.json:
@@ -99,8 +119,9 @@ def _run(args) -> int:
             where = h["file"] if h["kind"] == "sha256" else f"{h['file']}:{h['line']}"
             print(f"  [{h['severity']:>6}] {h['label']}  {where}  {h['context']}")
         s = report["by_severity"]
+        allowed = f", {report['allowed_count']} allowed" if report["allowed_count"] else ""
         print(f"scanned {report['files_scanned']} files ({report['files_skipped']} skipped) — "
-              f"{report['hit_count']} hit(s): {s['high']} high, {s['medium']} medium, {s['low']} low")
+              f"{report['hit_count']} hit(s): {s['high']} high, {s['medium']} medium, {s['low']} low{allowed}")
         print("CLEAN" if report["clean"] else "HITS FOUND")
         return 0 if report["clean"] else 1
     if args.command == "record":
