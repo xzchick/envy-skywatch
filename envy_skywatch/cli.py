@@ -34,7 +34,8 @@ def build_parser() -> argparse.ArgumentParser:
     add.add_argument("watchlist")
     add.add_argument("destination", help="a new watchlist file; never overwritten")
     add.add_argument("--label", required=True, help="a name for this term")
-    add.add_argument("--pattern", required=True, help="a keyword, or a 64-hex SHA-256 for --kind sha256")
+    add.add_argument("--pattern", required=True,
+                     help="a keyword (text), a regular expression (regex), or a 64-hex SHA-256 (sha256)")
     add.add_argument("--kind", default="text", choices=KINDS)
     add.add_argument("--severity", default="medium", choices=SEVERITIES)
 
@@ -95,7 +96,7 @@ def _run(args) -> int:
             print(json.dumps(report, ensure_ascii=False, indent=2))
             return 0 if report["clean"] else 1
         for h in report["hits"]:
-            where = f"{h['file']}:{h['line']}" if h["kind"] == "text" else h["file"]
+            where = h["file"] if h["kind"] == "sha256" else f"{h['file']}:{h['line']}"
             print(f"  [{h['severity']:>6}] {h['label']}  {where}  {h['context']}")
         s = report["by_severity"]
         print(f"scanned {report['files_scanned']} files ({report['files_skipped']} skipped) — "

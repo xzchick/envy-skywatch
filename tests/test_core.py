@@ -78,7 +78,7 @@ class SkyWatchTest(unittest.TestCase):
         with self.assertRaises(SkyWatchError):
             core.add_term(p0, self.seq(), self.SECRET, "x", "y", severity="critical")
         with self.assertRaises(SkyWatchError):
-            core.add_term(p0, self.seq(), self.SECRET, "x", "y", kind="regex")
+            core.add_term(p0, self.seq(), self.SECRET, "x", "y", kind="bogus")
 
     def test_remove_term(self):
         p0 = self.watchlist()
@@ -227,6 +227,32 @@ class SkyWatchTest(unittest.TestCase):
         with self.assertRaises(SkyWatchError):
             core.add_term(p0, dest, self.SECRET, "x", "y")
         self.assertEqual(dest.read_bytes(), b"keep me")
+
+    # ----- regex terms (v0.2) ------------------------------------------
+    def test_regex_term_matches_with_line_and_context(self):
+        p0 = self.watchlist()
+        p1 = self.seq()
+        core.add_term(p0, p1, self.SECRET, "Secret token", r"token=[A-Z]+-SECRET-\d+",
+                      kind="regex", severity="high")
+        report = core.scan(p1, self.SECRET, self.tree)
+        regex_hits = [h for h in report["hits"] if h["kind"] == "regex"]
+        self.assertEqual(len(regex_hits), 1)
+        self.assertEqual(regex_hits[0]["file"], "sub/secret.txt")
+        self.assertEqual(regex_hits[0]["line"], 1)
+        self.assertIn("token=ABCD-SECRET-1234", regex_hits[0]["context"])
+
+    def test_regex_is_case_insensitive(self):
+        p0 = self.watchlist()
+        p1 = self.seq()
+        core.add_term(p0, p1, self.SECRET, "errors", r"error", kind="regex")
+        report = core.scan(p1, self.SECRET, self.tree)
+        lines = sorted(h["line"] for h in report["hits"] if h["kind"] == "regex")
+        self.assertEqual(lines, [2, 3])  # matches both ERROR lines in app.log
+
+    def test_invalid_regex_rejected_at_add(self):
+        p0 = self.watchlist()
+        with self.assertRaises(SkyWatchError):
+            core.add_term(p0, self.seq(), self.SECRET, "bad", "(unclosed", kind="regex")
 
 
 if __name__ == "__main__":
