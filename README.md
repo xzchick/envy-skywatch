@@ -71,9 +71,9 @@ The **Watchlist** tab manages your terms, and **recording a scan** appends its s
 
 A **standalone bundle** that needs no Python, or **pip** if you already have Python 3.10+.
 
-### Standalone bundle (no Python) — coming with v0.1.0
+### Standalone bundle (no Python)
 
-When the v0.1.0 release is published, download a bundle from **Releases**:
+Download a bundle from the [latest release](https://github.com/xzchick/envy-skywatch/releases/latest):
 
 | File | System | Run it |
 |---|---|---|
