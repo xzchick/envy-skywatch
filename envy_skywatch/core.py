@@ -22,6 +22,7 @@ from __future__ import annotations
 import datetime
 import fnmatch
 import hashlib
+import re
 import html
 import json
 import os
@@ -43,7 +44,7 @@ MAX_HITS = 50000                        # overall cap per scan
 MAX_HITS_PER_TERM_FILE = 1000
 CONTEXT = 120                           # characters of context around a keyword hit
 CHUNK = 1024 * 1024
-KINDS = ("text", "sha256")
+KINDS = ("text", "sha256", "regex")
 SEVERITIES = ("low", "medium", "high")
 
 
@@ -169,6 +170,11 @@ def _validate_term(value):
     kind = _choice(value["kind"], KINDS, "Kind")
     pattern = value["pattern"]
     pattern = _sha256(pattern, "hash pattern") if kind == "sha256" else _text(pattern, "pattern", 200)
+    if kind == "regex":
+        try:
+            re.compile(pattern)
+        except re.error as exc:
+            raise SkyWatchError(f"Invalid regular expression: {exc}") from None
     return {"id": _uuid(value["id"], "term id"),
             "label": _text(value["label"], "label", 200),
             "pattern": pattern, "kind": kind,
@@ -367,17 +373,29 @@ def _read_for_scan(path):
     return digest, text, None
 
 
+def _snippet_at(line, idx):
+    start = max(0, idx - CONTEXT // 2)
+    snippet = line[start:start + CONTEXT].strip()
+    return ("…" + snippet) if start > 0 else snippet
+
+
 def _scan_text(text, needle_lower):
     hits = []
     for lineno, line in enumerate(text.splitlines(), 1):
         low = line.lower()
         if needle_lower in low:
-            idx = low.index(needle_lower)
-            start = max(0, idx - CONTEXT // 2)
-            snippet = line[start:start + CONTEXT].strip()
-            if start > 0:
-                snippet = "…" + snippet
-            hits.append((lineno, snippet))
+            hits.append((lineno, _snippet_at(line, low.index(needle_lower))))
+            if len(hits) >= MAX_HITS_PER_TERM_FILE:
+                break
+    return hits
+
+
+def _scan_regex(text, compiled):
+    hits = []
+    for lineno, line in enumerate(text.splitlines(), 1):
+        match = compiled.search(line)
+        if match:
+            hits.append((lineno, _snippet_at(line, match.start())))
             if len(hits) >= MAX_HITS_PER_TERM_FILE:
                 break
     return hits
@@ -392,6 +410,9 @@ def scan(source, secret, target, ignore=()):
     terms = data["terms"]
     text_terms = [t for t in terms if t["kind"] == "text"]
     hash_terms = [t for t in terms if t["kind"] == "sha256"]
+    regex_terms = [t for t in terms if t["kind"] == "regex"]
+    # Compiled once; case-insensitive to match the keyword behaviour (use (?-i:…) to opt out).
+    regex_compiled = {t["id"]: re.compile(t["pattern"], re.IGNORECASE) for t in regex_terms}
     root = Path(target).expanduser()
     hits, files_scanned, files_skipped, truncated = [], 0, 0, False
     for path in _iter_files(target, ignore):
@@ -405,7 +426,7 @@ def scan(source, secret, target, ignore=()):
             if term["pattern"] == digest:
                 hits.append({"term_id": term["id"], "label": term["label"], "severity": term["severity"],
                              "kind": "sha256", "file": rel, "line": 0, "context": digest})
-        if text is not None:
+        if text is not None and not truncated:
             needles = {t["id"]: t["pattern"].lower() for t in text_terms}
             for term in text_terms:
                 for lineno, snippet in _scan_text(text, needles[term["id"]]):
@@ -416,6 +437,15 @@ def scan(source, secret, target, ignore=()):
                         break
                 if truncated:
                     break
+            for term in regex_terms:
+                if truncated:
+                    break
+                for lineno, snippet in _scan_regex(text, regex_compiled[term["id"]]):
+                    hits.append({"term_id": term["id"], "label": term["label"], "severity": term["severity"],
+                                 "kind": "regex", "file": rel, "line": lineno, "context": snippet})
+                    if len(hits) >= MAX_HITS:
+                        truncated = True
+                        break
         if truncated:
             break
     order = {"high": 0, "medium": 1, "low": 2}
@@ -425,8 +455,9 @@ def scan(source, secret, target, ignore=()):
             "target": str(root), "scanned_utc": _utc(), "files_scanned": files_scanned,
             "files_skipped": files_skipped, "hits": hits, "hit_count": len(hits), "truncated": truncated,
             "by_severity": by_sev, "clean": not hits,
-            "basis": "A hit is a literal, case-insensitive match — it means the term appeared, not that it "
-                     "matters. Matching is not regex, fuzzy or semantic, and skipped files were not searched."}
+            "basis": "A hit is a case-insensitive match of a keyword, a regular expression you wrote, or a "
+                     "file hash — it means the term appeared, not that it matters. Matching is not fuzzy or "
+                     "semantic, and skipped files were not searched."}
 
 
 def _rel(path, root):
