@@ -46,6 +46,7 @@ def build_parser() -> argparse.ArgumentParser:
     sc = commands.add_parser("scan", help="scan a file or folder (read-only; exit 1 if any hits)")
     sc.add_argument("watchlist")
     sc.add_argument("target", help="a file or folder to scan")
+    sc.add_argument("--json", action="store_true", help="emit the full hit report as JSON")
 
     rec = commands.add_parser("record", help="scan and append the summary to the journal (new revision)")
     rec.add_argument("watchlist")
@@ -88,6 +89,9 @@ def _run(args) -> int:
         return 0
     if args.command == "scan":
         report = scan(args.watchlist, _passphrase(), args.target)
+        if args.json:
+            print(json.dumps(report, ensure_ascii=False, indent=2))
+            return 0 if report["clean"] else 1
         for h in report["hits"]:
             where = f"{h['file']}:{h['line']}" if h["kind"] == "text" else h["file"]
             print(f"  [{h['severity']:>6}] {h['label']}  {where}  {h['context']}")
