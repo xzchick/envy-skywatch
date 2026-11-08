@@ -20,6 +20,7 @@ Standard library only, apart from ``cryptography`` for the encrypted envelope.
 from __future__ import annotations
 
 import datetime
+import fnmatch
 import hashlib
 import html
 import json
@@ -305,16 +306,25 @@ def remove_term(source, destination, secret, term_id):
 
 # --- Scanning ----------------------------------------------------------------
 
-def _iter_files(target):
+def _match_ignore(rel, ignore):
+    """True if a relative posix path matches any .gitignore-style glob (whole path or basename)."""
+    return any(fnmatch.fnmatch(rel, pat) or fnmatch.fnmatch(rel.rsplit("/", 1)[-1], pat) for pat in ignore)
+
+
+def _iter_files(target, ignore=()):
     target = Path(target).expanduser()
     if target.is_file():
         yield target
         return
     if not target.is_dir():
         raise SkyWatchError("The scan target must be an existing file or directory")
+    ignore = tuple(ignore or ())
     count = 0
     for dirpath, dirnames, filenames in os.walk(target, followlinks=False):
-        dirnames.sort()
+        # Prune ignored directories so we never descend into them.
+        dirnames[:] = sorted(
+            d for d in dirnames
+            if not _match_ignore((Path(dirpath, d).relative_to(target)).as_posix(), ignore))
         for name in sorted(filenames):
             full = Path(dirpath) / name
             try:
@@ -323,6 +333,8 @@ def _iter_files(target):
                 continue
             if not stat.S_ISREG(meta.st_mode):
                 continue  # skip symlinks, sockets, devices
+            if _match_ignore(full.relative_to(target).as_posix(), ignore):
+                continue
             count += 1
             if count > MAX_FILES:
                 raise SkyWatchError(f"More than {MAX_FILES} files under the target; narrow the scope")
@@ -371,15 +383,18 @@ def _scan_text(text, needle_lower):
     return hits
 
 
-def scan(source, secret, target):
-    """Scan a file or folder against the watchlist. Read-only. Returns detailed hits."""
+def scan(source, secret, target, ignore=()):
+    """Scan a file or folder against the watchlist. Read-only. Returns detailed hits.
+
+    ``ignore`` globs (.gitignore-style) skip matching files and whole directories.
+    """
     data, _ = _load(source, secret)
     terms = data["terms"]
     text_terms = [t for t in terms if t["kind"] == "text"]
     hash_terms = [t for t in terms if t["kind"] == "sha256"]
     root = Path(target).expanduser()
     hits, files_scanned, files_skipped, truncated = [], 0, 0, False
-    for path in _iter_files(target):
+    for path in _iter_files(target, ignore):
         digest, text, skipped = _read_for_scan(path)
         rel = _rel(path, root)
         if digest is None:

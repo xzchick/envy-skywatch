@@ -144,6 +144,22 @@ class SkyWatchTest(unittest.TestCase):
         # ...but the hash term matches it.
         self.assertIn("blob.bin", {h["file"] for h in report["hits"] if h["kind"] == "sha256"})
 
+    def test_scan_ignore_globs(self):
+        p = self._watch_with(("Errors", "error", "text", "high"))
+        (self.tree / "build").mkdir()
+        (self.tree / "build" / "out.log").write_text("ERROR in generated output")
+        (self.tree / "app.log").write_text("ERROR noise")
+        # Baseline: both .log files hit the "error" term.
+        base = {h["file"] for h in core.scan(p, self.SECRET, self.tree)["hits"]}
+        self.assertIn("app.log", base)
+        self.assertIn("build/out.log", base)
+        # Ignoring the build dir drops its hit but keeps app.log.
+        f1 = {h["file"] for h in core.scan(p, self.SECRET, self.tree, ignore=["build"])["hits"]}
+        self.assertIn("app.log", f1)
+        self.assertNotIn("build/out.log", f1)
+        # Ignoring *.log drops every .log hit -> clean.
+        self.assertTrue(core.scan(p, self.SECRET, self.tree, ignore=["*.log"])["clean"])
+
     def test_clean_scan_when_no_terms_match(self):
         p = self._watch_with(("Nope", "zzxxqq", "text", "low"))
         report = core.scan(p, self.SECRET, self.tree)
