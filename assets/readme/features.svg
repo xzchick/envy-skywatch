@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="400" viewBox="0 0 1000 400" role="img" aria-labelledby="title description">
+  <title id="title">What ENVY SkyWatch does</title>
+  <desc id="description">Encrypted watchlist: Terms and scan history sealed with AES-256-GCM. (aes-256-gcm); Offline scan: Scan a file or a whole folder for every term, locally. (file or folder); Hit in context: Every hit with its file, line and the matching snippet. (file : line); Keyword or hash: Watch a case-insensitive word, or a file by its SHA-256. (text · sha256); Scan journal: Record a scan into a SHA-256 hash-chained journal. (hash chain); Honest by design: A hit is a literal match — not a verdict. (no overclaiming)</desc>
+  <defs>
+    <linearGradient id="edge"><stop stop-color="#ff3db4" stop-opacity=".55"/><stop offset=".5" stop-color="#ac8cff" stop-opacity=".2"/><stop offset="1" stop-color="#35e8ff" stop-opacity=".65"/></linearGradient>
+    <linearGradient id="neon"><stop stop-color="#ff3db4"/><stop offset="1" stop-color="#35e8ff"/></linearGradient>
+    <radialGradient id="cloud"><stop stop-color="#0d5666" stop-opacity=".45"/><stop offset="1" stop-color="#050713" stop-opacity="0"/></radialGradient>
+    <radialGradient id="rose"><stop stop-color="#a71c7d" stop-opacity=".22"/><stop offset="1" stop-color="#050713" stop-opacity="0"/></radialGradient>
+    <clipPath id="clip"><rect x="1" y="1" width="998" height="398" rx="20"/></clipPath>
+  </defs>
+  <style>.signal{animation:pulse 7s ease-in-out infinite}@keyframes pulse{0%,100%{opacity:.45}50%{opacity:.95}}.fc0 .sh{animation:sh 9s ease-in-out 0.0s infinite}.fc1 .sh{animation:sh 9s ease-in-out -1.5s infinite}.fc2 .sh{animation:sh 9s ease-in-out -3.0s infinite}.fc3 .sh{animation:sh 9s ease-in-out -4.5s infinite}.fc4 .sh{animation:sh 9s ease-in-out -6.0s infinite}.fc5 .sh{animation:sh 9s ease-in-out -7.5s infinite}@keyframes sh{0%,100%{opacity:0}45%,55%{opacity:.9}}@media(prefers-reduced-motion:reduce){*{animation:none!important}}</style>
+  <g clip-path="url(#clip)">
+    <rect width="1000" height="400" fill="#050713"/>
+    <ellipse cx="920" cy="200" rx="300" ry="220" fill="url(#cloud)"/>
+    <ellipse cx="90" cy="390" rx="340" ry="220" fill="url(#rose)"/>
+    <g fill="#a8c7ed" opacity=".3"><circle cx="620" cy="26" r="1"/><circle cx="780" cy="376" r="1"/><circle cx="970" cy="43" r="1.2"/><circle cx="450" cy="382" r=".8"/></g>
+    <g class="fc fc0">
+      <rect x="30" y="30" width="300" height="160" rx="16" fill="#0a0e22" fill-opacity=".85" stroke="#ff3db4" stroke-opacity=".35"/>
+      <circle cx="72" cy="72" r="22" fill="#ff3db4" fill-opacity=".12"/>
+      <g transform="translate(60.0 60) scale(1.000)" fill="none" stroke="#ff3db4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></g>
+      <text x="108" y="79" font-size="20" font-weight="700" fill="#f2f4ff" font-family="Arial, Helvetica, sans-serif">Encrypted watchlist</text>
+      <text x="54" y="122" font-size="15" fill="#b9c3df" font-family="Arial, Helvetica, sans-serif">Terms and scan history</text>
+      <text x="54" y="143" font-size="15" fill="#b9c3df" font-family="Arial, Helvetica, sans-serif">sealed with AES-256-GCM.</text>
+      <text x="54" y="172" font-size="13" fill="#ff3db4" font-family="Menlo, Consolas, 'Courier New', monospace">aes-256-gcm</text>
+      <rect class="sh" x="30" y="30" width="300" height="3" rx="1.5" fill="#ff3db4" opacity=".0"/>
+    </g>
+    <g class="fc fc1">
+      <rect x="350" y="30" width="300" height="160" rx="16" fill="#0a0e22" fill-opacity=".85" stroke="#35e8ff" stroke-opacity=".35"/>
+      <circle cx="392" cy="72" r="22" fill="#35e8ff" fill-opacity=".12"/>
+      <g transform="translate(380.0 60) scale(1.000)" fill="none" stroke="#35e8ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.5"/><path d="M12 12l6.4-6.4"/><circle cx="16" cy="8" r="1.1"/></g>
+      <text x="428" y="79" font-size="20" font-weight="700" fill="#f2f4ff" font-family="Arial, Helvetica, sans-serif">Offline scan</text>
+      <text x="374" y="122" font-size="15" fill="#b9c3df" font-family="Arial, Helvetica, sans-serif">Scan a file or a whole folder</text>
+      <text x="374" y="143" font-size="15" fill="#b9c3df" font-family="Arial, Helvetica, sans-serif">for every term, locally.</text>
+      <text x="374" y="172" font-size="13" fill="#35e8ff" font-family="Menlo, Consolas, 'Courier New', monospace">file or folder</text>
+      <rect class="sh" x="350" y="30" width="300" height="3" rx="1.5" fill="#35e8ff" opacity=".0"/>
+    </g>
+    <g class="fc fc2">
+      <rect x="670" y="30" width="300" height="160" rx="16" fill="#0a0e22" fill-opacity=".85" stroke="#ac8cff" stroke-opacity=".35"/>
+      <circle cx="712" cy="72" r="22" fill="#ac8cff" fill-opacity=".12"/>
+      <g transform="translate(700.0 60) scale(1.000)" fill="none" stroke="#ac8cff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></g>
+      <text x="748" y="79" font-size="20" font-weight="700" fill="#f2f4ff" font-family="Arial, Helvetica, sans-serif">Hit in context</text>
+      <text x="694" y="122" font-size="15" fill="#b9c3df" font-family="Arial, Helvetica, sans-serif">Every hit with its file, line</text>
+      <text x="694" y="143" font-size="15" fill="#b9c3df" font-family="Arial, Helvetica, sans-serif">and the matching snippet.</text>
+      <text x="694" y="172" font-size="13" fill="#ac8cff" font-family="Menlo, Consolas, 'Courier New', monospace">file : line</text>
+      <rect class="sh" x="670" y="30" width="300" height="3" rx="1.5" fill="#ac8cff" opacity=".0"/>
+    </g>
+    <g class="fc fc3">
+      <rect x="30" y="220" width="300" height="160" rx="16" fill="#0a0e22" fill-opacity=".85" stroke="#ff3db4" stroke-opacity=".35"/>
+      <circle cx="72" cy="262" r="22" fill="#ff3db4" fill-opacity=".12"/>
+      <g transform="translate(60.0 250) scale(1.000)" fill="none" stroke="#ff3db4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3L7 21M17 3l-2 18M4 8.5h16M3 15.5h16"/></g>
+      <text x="108" y="269" font-size="20" font-weight="700" fill="#f2f4ff" font-family="Arial, Helvetica, sans-serif">Keyword or hash</text>
+      <text x="54" y="312" font-size="15" fill="#b9c3df" font-family="Arial, Helvetica, sans-serif">Watch a case-insensitive word,</text>
+      <text x="54" y="333" font-size="15" fill="#b9c3df" font-family="Arial, Helvetica, sans-serif">or a file by its SHA-256.</text>
+      <text x="54" y="362" font-size="13" fill="#ff3db4" font-family="Menlo, Consolas, 'Courier New', monospace">text · sha256</text>
+      <rect class="sh" x="30" y="220" width="300" height="3" rx="1.5" fill="#ff3db4" opacity=".0"/>
+    </g>
+    <g class="fc fc4">
+      <rect x="350" y="220" width="300" height="160" rx="16" fill="#0a0e22" fill-opacity=".85" stroke="#35e8ff" stroke-opacity=".35"/>
+      <circle cx="392" cy="262" r="22" fill="#35e8ff" fill-opacity=".12"/>
+      <g transform="translate(380.0 250) scale(1.000)" fill="none" stroke="#35e8ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h11a2 2 0 0 1 2 2v13"/><path d="M6 3a2 2 0 0 0-2 2v2h4V5a2 2 0 0 0-2-2z"/><path d="M8 7v12a2 2 0 0 0 2 2h9a2 2 0 0 0 2-2v-1H12v1a2 2 0 0 1-2 2"/></g>
+      <text x="428" y="269" font-size="20" font-weight="700" fill="#f2f4ff" font-family="Arial, Helvetica, sans-serif">Scan journal</text>
+      <text x="374" y="312" font-size="15" fill="#b9c3df" font-family="Arial, Helvetica, sans-serif">Record a scan into a</text>
+      <text x="374" y="333" font-size="15" fill="#b9c3df" font-family="Arial, Helvetica, sans-serif">SHA-256 hash-chained journal.</text>
+      <text x="374" y="362" font-size="13" fill="#35e8ff" font-family="Menlo, Consolas, 'Courier New', monospace">hash chain</text>
+      <rect class="sh" x="350" y="220" width="300" height="3" rx="1.5" fill="#35e8ff" opacity=".0"/>
+    </g>
+    <g class="fc fc5">
+      <rect x="670" y="220" width="300" height="160" rx="16" fill="#0a0e22" fill-opacity=".85" stroke="#ac8cff" stroke-opacity=".35"/>
+      <circle cx="712" cy="262" r="22" fill="#ac8cff" fill-opacity=".12"/>
+      <g transform="translate(700.0 250) scale(1.000)" fill="none" stroke="#ac8cff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M7 21h10M5 7h14"/><path d="M5 7l-3 7a3 3 0 0 0 6 0zM19 7l-3 7a3 3 0 0 0 6 0z"/></g>
+      <text x="748" y="269" font-size="20" font-weight="700" fill="#f2f4ff" font-family="Arial, Helvetica, sans-serif">Honest by design</text>
+      <text x="694" y="312" font-size="15" fill="#b9c3df" font-family="Arial, Helvetica, sans-serif">A hit is a literal match</text>
+      <text x="694" y="333" font-size="15" fill="#b9c3df" font-family="Arial, Helvetica, sans-serif">— not a verdict.</text>
+      <text x="694" y="362" font-size="13" fill="#ac8cff" font-family="Menlo, Consolas, 'Courier New', monospace">no overclaiming</text>
+      <rect class="sh" x="670" y="220" width="300" height="3" rx="1.5" fill="#ac8cff" opacity=".0"/>
+    </g>
+  </g>
+  <rect x=".75" y=".75" width="998.5" height="398.5" rx="20" fill="none" stroke="url(#edge)" stroke-width="1.5"/>
+</svg>

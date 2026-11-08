@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "envy-skywatch"
+version = "0.1.0"
+description = "ENVY SkyWatch: encrypted watchlists and offline content scanning — watch for what matters, in a native app window"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+dependencies = [
+  "cryptography>=42,<47",
+  "PyQt6>=6.7,<7",
+]
+
+[project.scripts]
+envy-skywatch = "envy_skywatch.cli:main"
+
+[project.gui-scripts]
+envy-skywatch-gui = "envy_skywatch.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["envy_skywatch*"]

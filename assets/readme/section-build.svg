@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="76" viewBox="0 0 1000 76" role="img" aria-labelledby="title description">
+  <title id="title">Build &amp; Test</title>
+  <desc id="description">Build &amp; Test: FOR CONTRIBUTORS</desc>
+  <defs>
+    <linearGradient id="edge"><stop stop-color="#ff3db4" stop-opacity=".55"/><stop offset=".5" stop-color="#ac8cff" stop-opacity=".2"/><stop offset="1" stop-color="#35e8ff" stop-opacity=".65"/></linearGradient>
+    <linearGradient id="neon"><stop stop-color="#ff3db4"/><stop offset="1" stop-color="#35e8ff"/></linearGradient>
+    <radialGradient id="cloud"><stop stop-color="#0d5666" stop-opacity=".45"/><stop offset="1" stop-color="#050713" stop-opacity="0"/></radialGradient>
+    <radialGradient id="rose"><stop stop-color="#a71c7d" stop-opacity=".22"/><stop offset="1" stop-color="#050713" stop-opacity="0"/></radialGradient>
+    <clipPath id="clip"><rect x="1" y="1" width="998" height="74" rx="16"/></clipPath>
+  </defs>
+  <style>.signal{animation:pulse 7s ease-in-out infinite}@keyframes pulse{0%,100%{opacity:.45}50%{opacity:.95}}.flicker{animation:flicker 6s linear infinite}@keyframes flicker{0%,18%,22%,62%,64%,100%{opacity:.85}20%,63%{opacity:.25}40%{opacity:1}}.travel{animation:travel 5s ease-in-out infinite}@keyframes travel{0%{transform:translateX(0);opacity:0}15%{opacity:1}85%{opacity:1}100%{transform:translateX(522px);opacity:0}}@media(prefers-reduced-motion:reduce){*{animation:none!important}}</style>
+  <g clip-path="url(#clip)">
+    <rect width="1000" height="76" fill="#050713"/>
+    <ellipse cx="920" cy="38" rx="300" ry="76" fill="url(#cloud)"/>
+    <ellipse cx="90" cy="66" rx="340" ry="76" fill="url(#rose)"/>
+    <g fill="#a8c7ed" opacity=".3"><circle cx="620" cy="26" r="1"/><circle cx="780" cy="52" r="1"/><circle cx="970" cy="43" r="1.2"/><circle cx="450" cy="58" r=".8"/></g>
+    <defs><filter id="glow" x="-20%" y="-60%" width="140%" height="220%"><feGaussianBlur stdDeviation="5"/></filter></defs>
+    <g class="flicker" filter="url(#glow)"><g transform="translate(28 23) scale(1.250)" fill="none" stroke="#ff3db4" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 6.5a4.5 4.5 0 0 0 5.9 5.9L21 13l-8 8-3-3 8-8-.6-.6a4.5 4.5 0 0 1-5.9-5.9l3 3 2-2z"/><path d="M3 21l6-6"/></g>
+      <text x="74" y="48" font-size="27" font-weight="700" fill="#ff3db4" font-family="Arial, Helvetica, sans-serif">Build &amp; Test</text></g>
+    <g transform="translate(28 23) scale(1.250)" fill="none" stroke="#ff3db4" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 6.5a4.5 4.5 0 0 0 5.9 5.9L21 13l-8 8-3-3 8-8-.6-.6a4.5 4.5 0 0 1-5.9-5.9l3 3 2-2z"/><path d="M3 21l6-6"/></g>
+    <text x="74" y="48" font-size="27" font-weight="700" letter-spacing=".4" fill="#f2f4ff" font-family="Arial, Helvetica, sans-serif">Build &amp; Test</text>
+    <text x="970" y="47" font-size="12.5" letter-spacing="2.4" font-weight="600" fill="#ff3db4" text-anchor="end" font-family="Arial, Helvetica, sans-serif">FOR CONTRIBUTORS</text>
+    <path d="M284 39H806" stroke="#ff3db4" stroke-opacity=".25" stroke-width="1.5"/>
+    <g class="travel"><circle cx="284" cy="39" r="5" fill="#ff3db4" opacity=".3"/><circle cx="284" cy="39" r="2" fill="#fff"/></g>
+  </g>
+  <rect x=".75" y=".75" width="998.5" height="74.5" rx="16" fill="none" stroke="url(#edge)" stroke-width="1.5"/>
+</svg>

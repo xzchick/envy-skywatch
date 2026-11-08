@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="340" height="230" viewBox="0 0 340 230" role="img" aria-labelledby="title description">
+  <title id="title">macOS: supported</title>
+  <desc id="description">macOS: window Native Cocoa window, engine bundled Python + Qt, needs no dependencies, install .app bundle or pip</desc>
+  <defs>
+    <linearGradient id="edge"><stop stop-color="#ff3db4" stop-opacity=".55"/><stop offset=".5" stop-color="#ac8cff" stop-opacity=".2"/><stop offset="1" stop-color="#35e8ff" stop-opacity=".65"/></linearGradient>
+    <linearGradient id="neon"><stop stop-color="#ff3db4"/><stop offset="1" stop-color="#35e8ff"/></linearGradient>
+    <radialGradient id="cloud"><stop stop-color="#0d5666" stop-opacity=".45"/><stop offset="1" stop-color="#050713" stop-opacity="0"/></radialGradient>
+    <radialGradient id="rose"><stop stop-color="#a71c7d" stop-opacity=".22"/><stop offset="1" stop-color="#050713" stop-opacity="0"/></radialGradient>
+    <clipPath id="clip"><rect x="1" y="1" width="338" height="228" rx="18"/></clipPath>
+  </defs>
+  <style>.signal{animation:pulse 7s ease-in-out infinite}@keyframes pulse{0%,100%{opacity:.45}50%{opacity:.95}}@media(prefers-reduced-motion:reduce){*{animation:none!important}}</style>
+  <g clip-path="url(#clip)">
+    <rect width="340" height="230" fill="#050713"/>
+    <ellipse cx="260" cy="115" rx="204" ry="220" fill="url(#cloud)"/>
+    <ellipse cx="90" cy="220" rx="238" ry="220" fill="url(#rose)"/>
+    <g fill="#a8c7ed" opacity=".3"><circle cx="211" cy="26" r="1"/><circle cx="265" cy="206" r="1"/><circle cx="310" cy="43" r="1.2"/><circle cx="153" cy="212" r=".8"/></g>
+    <circle class="signal" cx="58" cy="56" r="30" fill="#ff3db4" fill-opacity=".14"/>
+    <g transform="translate(40 37) scale(1.500)"><path d="M16.4 12.7c0-2.3 1.9-3.4 2-3.5-1.1-1.6-2.8-1.8-3.4-1.8-1.4-.2-2.8.9-3.5.9-.7 0-1.9-.8-3-.8-1.6 0-3 .9-3.8 2.3-1.6 2.8-.4 7 1.2 9.3.8 1.1 1.7 2.4 2.9 2.3 1.2 0 1.6-.7 3-.7s1.8.7 3 .7c1.3 0 2.1-1.1 2.8-2.3.9-1.3 1.3-2.6 1.3-2.7 0 0-2.5-1-2.5-3.7z" fill="#ff3db4"/><path d="M14.1 5.9c.6-.8 1.1-1.8 1-2.9-.9 0-2 .6-2.7 1.4-.6.7-1.1 1.8-1 2.8 1 .1 2.1-.5 2.7-1.3z" fill="#ff3db4"/></g>
+    <text x="102" y="52" font-size="25" font-weight="700" fill="#f2f4ff" font-family="Arial, Helvetica, sans-serif">macOS</text>
+    <text x="103" y="73" font-size="11.5" letter-spacing="2" font-weight="600" fill="#ff3db4" font-family="Arial, Helvetica, sans-serif">SUPPORTED</text>
+    <path d="M26 88H314" stroke="#1f2547"/>
+    <g font-family="Menlo, Consolas, 'Courier New', monospace" font-size="12.5"><text x="26" y="112" fill="#ff3db4">window</text><text x="104" y="112" fill="#f2f4ff">Native Cocoa window</text><text x="26" y="140" fill="#ff3db4">engine</text><text x="104" y="140" fill="#f2f4ff">bundled Python + Qt</text><text x="26" y="168" fill="#ff3db4">needs</text><text x="104" y="168" fill="#f2f4ff">no dependencies</text><text x="26" y="196" fill="#ff3db4">install</text><text x="104" y="196" fill="#f2f4ff">.app bundle or pip</text></g>
+  </g>
+  <rect x=".75" y=".75" width="338.5" height="228.5" rx="18" fill="none" stroke="url(#edge)" stroke-width="1.5"/>
+</svg>
