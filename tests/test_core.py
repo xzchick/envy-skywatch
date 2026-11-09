@@ -287,5 +287,21 @@ class SkyWatchTest(unittest.TestCase):
         self.assertEqual(reloaded["allowlist"], [])
 
 
+    # ----- CSV export of hits (v0.2) -----------------------------------
+    def test_export_csv_hits(self):
+        import csv as _csv
+        p0 = self.watchlist()
+        p1 = self.seq(); core.add_term(p0, p1, self.SECRET, "Errors", "error", severity="high")
+        out = self.dir / "hits.csv"
+        res = core.export(p1, out, self.SECRET, "csv", target=self.tree)
+        self.assertEqual(res["format"], "csv")
+        rows = list(_csv.reader(out.read_text().splitlines()))
+        self.assertEqual(rows[0], ["severity", "kind", "term", "file", "line", "context"])
+        data_rows = rows[1:]
+        self.assertEqual(len(data_rows), 2)                       # two ERROR lines in app.log
+        self.assertTrue(all(r[0] == "high" for r in data_rows))
+        self.assertTrue(all(r[3] == "app.log" for r in data_rows))
+
+
 if __name__ == "__main__":
     unittest.main()
