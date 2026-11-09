@@ -27,7 +27,7 @@ AES-256-GCM encrypted watchlists, a SHA-256 hash-chained scan journal, revision-
 </p>
 
 <p align="center">
-  <img src="assets/readme/window.png" width="90%" alt="The SkyWatch window: a hits table showing keyword and file-hash matches coloured by severity, each with its file, line and context, in the ENVY neon theme" />
+  <img src="assets/readme/demo.gif" width="90%" alt="The SkyWatch window: a hits table showing keyword and file-hash matches coloured by severity, each with its file, line and context, in the ENVY neon theme" />
 </p>
 
 <p align="center"><sub>A real native window — not a browser view. The wordmark pulses, a radar sweeps the header, and a light travels the accent bar.</sub></p>

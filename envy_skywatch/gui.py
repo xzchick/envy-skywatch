@@ -211,9 +211,10 @@ def _build():
 
             self.path_label = QLabel(""); self.path_label.setObjectName("foot")
             self.path_label.setWordWrap(True); bl.addWidget(self.path_label)
-            foot = QLabel("A hit is a literal, case-insensitive match — it means the term appeared, not that it "
-                          "matters. Matching is not regex, fuzzy or semantic; binary and unreadable files are "
-                          "skipped for keywords (still hashed). Times are assertions from your clock.")
+            foot = QLabel("A hit is a case-insensitive match of a keyword, a regular expression or a file hash — "
+                          "it means the term appeared, not that it matters. Matching is not fuzzy or semantic; "
+                          "binary and unreadable files are skipped for keywords (still hashed). Times are "
+                          "assertions from your clock.")
             foot.setObjectName("foot"); foot.setWordWrap(True); bl.addWidget(foot)
             root.addWidget(body, 1)
 
