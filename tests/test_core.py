@@ -303,5 +303,19 @@ class SkyWatchTest(unittest.TestCase):
         self.assertTrue(all(r[3] == "app.log" for r in data_rows))
 
 
+    # ----- Markdown export (v0.2) --------------------------------------
+    def test_export_markdown_hits(self):
+        p0 = self.watchlist()
+        p1 = self.seq(); core.add_term(p0, p1, self.SECRET, "Errors", "error", severity="high")
+        out = self.dir / "r.md"
+        res = core.export(p1, out, self.SECRET, "md", target=self.tree)
+        self.assertEqual(res["format"], "md")
+        text = out.read_text()
+        self.assertTrue(text.startswith("# Watch — scan"))
+        self.assertIn("## Hits (2)", text)
+        self.assertIn("app.log", text)
+        self.assertIn("| Severity | Term |", text)
+
+
 if __name__ == "__main__":
     unittest.main()
