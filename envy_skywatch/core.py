@@ -19,9 +19,11 @@ Standard library only, apart from ``cryptography`` for the encrypted envelope.
 
 from __future__ import annotations
 
+import csv
 import datetime
 import fnmatch
 import hashlib
+import io
 import re
 import html
 import json
@@ -554,9 +556,15 @@ def inspect(source, secret):
 
 # --- Plaintext export --------------------------------------------------------
 
+def _safe_csv(value):
+    """Guard a CSV field against spreadsheet formula injection."""
+    text = str(value)
+    return "'" + text if text[:1] in ("=", "+", "-", "@") else text
+
+
 def export(source, destination, secret, format="html", target=None):
-    if format not in ("html", "json"):
-        raise SkyWatchError("Export format must be html or json")
+    if format not in ("html", "json", "csv"):
+        raise SkyWatchError("Export format must be html, json or csv")
     data, envelope = _load(source, secret)
     if target is None:
         raise SkyWatchError("Export needs a scan target (a file or folder to scan)")
@@ -567,11 +575,19 @@ def export(source, destination, secret, format="html", target=None):
            "files_scanned": report["files_scanned"], "files_skipped": report["files_skipped"],
            "by_severity": report["by_severity"], "hits": report["hits"], "truncated": report["truncated"],
            "envelope_sha256": envelope,
-           "limitations": "Plaintext export. A hit is a literal, case-insensitive match, not a verdict; "
-                          "matching is not regex, fuzzy or semantic; skipped files were not searched, and "
-                          "times are assertions from the operator's clock."}
+           "limitations": "Plaintext export. A hit is a case-insensitive match of a keyword, a regular "
+                          "expression or a file hash, not a verdict; matching is not fuzzy or semantic; "
+                          "skipped files were not searched, and times are assertions from the operator's clock."}
     if format == "json":
         output = (json.dumps(out, ensure_ascii=False, indent=2) + "\n").encode("utf-8")
+    elif format == "csv":
+        buf = io.StringIO()
+        writer = csv.writer(buf)
+        writer.writerow(["severity", "kind", "term", "file", "line", "context"])
+        for hit in report["hits"]:
+            writer.writerow([hit["severity"], hit["kind"], _safe_csv(hit["label"]),
+                             _safe_csv(hit["file"]), hit["line"], _safe_csv(hit["context"])])
+        output = buf.getvalue().encode("utf-8")
     else:
         def esc(v):
             return html.escape(str(v), quote=True)
