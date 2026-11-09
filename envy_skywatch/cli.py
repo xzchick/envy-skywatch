@@ -74,7 +74,7 @@ def build_parser() -> argparse.ArgumentParser:
     exp.add_argument("watchlist")
     exp.add_argument("destination", help="a new report file; never overwritten")
     exp.add_argument("target", help="a file or folder to scan")
-    exp.add_argument("--format", default="html", choices=("html", "json", "csv"))
+    exp.add_argument("--format", default="html", choices=("html", "json", "csv", "md"))
     return root
 
 

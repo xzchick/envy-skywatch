@@ -563,8 +563,8 @@ def _safe_csv(value):
 
 
 def export(source, destination, secret, format="html", target=None):
-    if format not in ("html", "json", "csv"):
-        raise SkyWatchError("Export format must be html, json or csv")
+    if format not in ("html", "json", "csv", "md"):
+        raise SkyWatchError("Export format must be html, json, csv or md")
     data, envelope = _load(source, secret)
     if target is None:
         raise SkyWatchError("Export needs a scan target (a file or folder to scan)")
@@ -588,6 +588,30 @@ def export(source, destination, secret, format="html", target=None):
             writer.writerow([hit["severity"], hit["kind"], _safe_csv(hit["label"]),
                              _safe_csv(hit["file"]), hit["line"], _safe_csv(hit["context"])])
         output = buf.getvalue().encode("utf-8")
+    elif format == "md":
+        def cell(value):
+            return str(value).replace("|", "\\|").replace("\n", " ").replace("\r", " ")
+
+        s = report["by_severity"]
+        verdict = "**CLEAN** — no hits." if report["clean"] else \
+            f"**{report['hit_count']} hit(s)** — {s['high']} high, {s['medium']} medium, {s['low']} low."
+        lines = [f"# {data['title']} — scan", "", out["limitations"], "",
+                 f"- **Watchlist:** `{data['watch_id']}`",
+                 f"- **Target:** `{report['target']}`",
+                 f"- **Scanned:** {report['scanned_utc']} · {report['files_scanned']} files "
+                 f"({report['files_skipped']} skipped)",
+                 f"- {verdict}", "",
+                 f"## Hits ({report['hit_count']})"]
+        if report["hits"]:
+            lines += ["| Severity | Term | Kind | File | Line | Context |",
+                      "| --- | --- | --- | --- | --- | --- |"]
+            for hit in report["hits"]:
+                where = "" if hit["kind"] == "sha256" else hit["line"]
+                lines.append(f"| {hit['severity']} | {cell(hit['label'])} | {hit['kind']} | "
+                             f"{cell(hit['file'])} | {where} | {cell(hit['context'])} |")
+        else:
+            lines.append("_No hits._")
+        output = ("\n".join(lines) + "\n").encode("utf-8")
     else:
         def esc(v):
             return html.escape(str(v), quote=True)
