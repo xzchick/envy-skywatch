@@ -13,7 +13,7 @@ import sys
 
 from . import __version__
 from .core import (KINDS, SEVERITIES, SkyWatchError, add_term, allow, check_passphrase,
-                   create, export, inspect, record_scan, remove_term, scan, unallow)
+                   create, diff_scan, export, inspect, record_scan, remove_term, scan, unallow)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -66,6 +66,14 @@ def build_parser() -> argparse.ArgumentParser:
     rec.add_argument("watchlist")
     rec.add_argument("destination", help="a new watchlist file; never overwritten")
     rec.add_argument("target", help="a file or folder to scan")
+
+    df = commands.add_parser("diff", help="scan and compare against the last recorded scan "
+                                          "(read-only; exit 1 only if hits increased)")
+    df.add_argument("watchlist")
+    df.add_argument("target", help="a file or folder to scan")
+    df.add_argument("--json", action="store_true", help="emit the full diff as JSON")
+    df.add_argument("--ignore", action="append", default=[], metavar="GLOB",
+                    help="skip paths matching this glob (repeatable, .gitignore-style)")
 
     insp = commands.add_parser("inspect", help="print the decrypted watchlist and journal (read-only)")
     insp.add_argument("watchlist")
@@ -130,6 +138,26 @@ def _run(args) -> int:
         print(f"recorded scan → {result['output']} (revision {result['revision']})  "
               f"{s['hits']} hit(s) over {s['files_scanned']} files")
         return 0
+    if args.command == "diff":
+        rep = diff_scan(args.watchlist, _passphrase(), args.target, ignore=args.ignore)
+        if args.json:
+            print(json.dumps(rep, ensure_ascii=False, indent=2))
+            return 1 if rep["regressed"] else 0
+        cur = rep["current"]
+        if not rep["has_baseline"]:
+            print(f"No earlier recorded scan to compare against — {cur['hits']} hit(s) now "
+                  f"({cur['high']} high, {cur['medium']} medium, {cur['low']} low). "
+                  f"Record one with `skywatch record`.")
+            return 0
+        d = rep["delta"]
+        def sgn(n):
+            return f"{n:+d}"
+        print(f"since the last recorded scan ({rep['previous_recorded_utc']}):")
+        print(f"  hits {rep['previous']['hits']} → {cur['hits']} ({sgn(d['hits'])}); "
+              f"high {sgn(d['high'])}, medium {sgn(d['medium'])}, low {sgn(d['low'])}")
+        print("REGRESSED — more hits than before" if rep["regressed"]
+              else ("no change" if d["hits"] == 0 else "improved — fewer hits than before"))
+        return 1 if rep["regressed"] else 0
     if args.command == "export":
         result = export(args.watchlist, args.destination, _passphrase(), args.format, args.target)
         print(f"export ({result['format']}): wrote {result['output']}  sha256 {result['sha256']}")

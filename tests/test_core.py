@@ -178,6 +178,39 @@ class SkyWatchTest(unittest.TestCase):
         data, _ = core._load(p2, self.SECRET)
         self.assertEqual(data["journal"][1]["previous_sha256"], data["journal"][0]["record_sha256"])
 
+    def test_diff_scan_against_last_recorded(self):
+        p = self._watch_with(("Errors", "error", "text", "high"))
+        # Nothing recorded yet -> no baseline, never a regression.
+        first = core.diff_scan(p, self.SECRET, self.tree)
+        self.assertFalse(first["has_baseline"])
+        self.assertFalse(first["regressed"])
+        self.assertIsNone(first["delta"])
+        self.assertEqual(first["current"]["hits"], 2)
+        # Record a baseline (app.log has two "error" lines), then diff with no change.
+        p1 = self.seq()
+        core.record_scan(p, p1, self.SECRET, self.tree)
+        same = core.diff_scan(p1, self.SECRET, self.tree)
+        self.assertTrue(same["has_baseline"])
+        self.assertIsNotNone(same["previous_recorded_utc"])
+        self.assertEqual(same["delta"]["hits"], 0)
+        self.assertFalse(same["regressed"])
+        # A new matching file is a regression against the recorded baseline.
+        (self.tree / "new.log").write_text("ERROR another one\n")
+        worse = core.diff_scan(p1, self.SECRET, self.tree)
+        self.assertEqual(worse["delta"]["hits"], 1)
+        self.assertEqual(worse["current"]["hits"], 3)
+        self.assertTrue(worse["regressed"])
+
+    def test_diff_scan_respects_ignore_globs(self):
+        p = self._watch_with(("Errors", "error", "text", "high"))
+        p1 = self.seq()
+        core.record_scan(p, p1, self.SECRET, self.tree)
+        # Ignoring the only hit-bearing file drops hits below the baseline -> not a regression.
+        rep = core.diff_scan(p1, self.SECRET, self.tree, ignore=["app.log"])
+        self.assertEqual(rep["current"]["hits"], 0)
+        self.assertEqual(rep["delta"]["hits"], -2)
+        self.assertFalse(rep["regressed"])
+
     def test_tampered_journal_breaks_chain(self):
         p = self._watch_with(("Errors", "error", "text", "high"))
         p1 = self.seq()
