@@ -543,6 +543,38 @@ def record_scan(source, destination, secret, target):
     return dict(result, recorded_scan=summary)
 
 
+def diff_scan(source, secret, target, ignore=()):
+    """Scan now and compare the result against the most recent recorded scan. Read-only.
+
+    Reports how the hit counts moved since the last ``record``ed scan, so a pipeline can
+    fail only when things got *worse* rather than on every standing hit. A watchlist with
+    no recorded scan yet has nothing to compare against, which is reported, not an error.
+    """
+    data, _ = _load(source, secret)
+    report = scan(source, secret, target, ignore)
+    metrics = ("hits", "high", "medium", "low")
+    current = {"scanned_utc": report["scanned_utc"], "target": report["target"],
+               "hits": report["hit_count"], "high": report["by_severity"]["high"],
+               "medium": report["by_severity"]["medium"], "low": report["by_severity"]["low"],
+               "files_scanned": report["files_scanned"], "files_skipped": report["files_skipped"]}
+    previous = previous_recorded_utc = delta = None
+    for record in reversed(data["journal"]):
+        if "scan" in record:
+            previous = record["scan"]
+            previous_recorded_utc = record["recorded_utc"]
+            break
+    if previous is not None:
+        delta = {m: current[m] - previous[m] for m in metrics}
+    regressed = bool(previous is not None and delta["hits"] > 0)
+    return {"watch_id": data["watch_id"], "title": data["title"], "target": current["target"],
+            "current": current, "previous": previous, "previous_recorded_utc": previous_recorded_utc,
+            "delta": delta, "regressed": regressed, "has_baseline": previous is not None,
+            "basis": "Compares this scan's hit counts against the last recorded scan's summary. "
+                     "A rise means more literal matches than before, not that anything new matters; "
+                     "with no recorded scan yet there is nothing to compare against. Times are "
+                     "assertions from your clock."}
+
+
 def inspect(source, secret):
     data, envelope = _load(source, secret)
     return {"watch_id": data["watch_id"], "title": data["title"], "revision": data["revision"],
