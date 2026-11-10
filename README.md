@@ -153,4 +153,8 @@ python scripts/smoke_test_release.py             # launch the built bundle and c
 
 CI runs all of this on Ubuntu, Windows and macOS for every push. Regenerate the README artwork with `python scripts/render_readme_art.py`.
 
+## Security
+
+Security policy and private vulnerability reporting: **[SECURITY.md](SECURITY.md)**. What ENVY SkyWatch does and does not protect against: **[THREAT_MODEL.md](THREAT_MODEL.md)**.
+
 <p align="center"><sub>MIT licensed. Part of ENVY BLACK VEIL, packaged as a standalone app. Offline; no telemetry, no network, no accounts.</sub></p>
