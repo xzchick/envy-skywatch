@@ -157,4 +157,22 @@ CI runs all of this on Ubuntu, Windows and macOS for every push. Regenerate the 
 
 Security policy and private vulnerability reporting: **[SECURITY.md](SECURITY.md)**. What ENVY SkyWatch does and does not protect against: **[THREAT_MODEL.md](THREAT_MODEL.md)**.
 
+## The ENVY BLACK VEIL suite
+
+ENVY SkyWatch is one of eleven standalone apps from **ENVY BLACK VEIL** — small native desktop tools that are offline by design: no network, no accounts, no telemetry, everything encrypted at rest.
+
+| App | What it does |
+|---|---|
+| [ENVY Vault](https://github.com/xzchick/envy-vault) | Local AES-256 file encryption |
+| [ENVY Veil](https://github.com/xzchick/envy-veil) | Steganography — hide an encrypted file in an image or audio carrier |
+| [ENVY Hypothesis](https://github.com/xzchick/envy-hypothesis) | Analysis of Competing Hypotheses |
+| [ENVY Oracle](https://github.com/xzchick/envy-oracle) | Forecast tracking with calibration scoring |
+| **ENVY SkyWatch** — *you are here* | Watchlists with offline content scanning |
+| [ENVY Casebook](https://github.com/xzchick/envy-casebook) | Encrypted, revision-preserving case notes |
+| [ENVY Cryptography Workbench](https://github.com/xzchick/envy-crypto-workbench) | Classical ciphers, encoding and text analysis |
+| [ENVY Orbit](https://github.com/xzchick/envy-orbit) | Recurring-cadence tracking |
+| [ENVY Ops Desk](https://github.com/xzchick/envy-ops-desk) | Operations plans with authenticated handoffs |
+| [ENVY Evidence Vault](https://github.com/xzchick/envy-evidence-vault) | File intake with a hash-verified custody journal |
+| [ENVY Integrity Monitor](https://github.com/xzchick/envy-integrity-monitor) | File-integrity baselines and change detection |
+
 <p align="center"><sub>MIT licensed. Part of ENVY BLACK VEIL, packaged as a standalone app. Offline; no telemetry, no network, no accounts.</sub></p>
