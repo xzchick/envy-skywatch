@@ -227,13 +227,13 @@ class SkyWatchTest(unittest.TestCase):
         p = self._watch_with(("Errors", "error", "text", "high"))
         html_out = self.dir / "r.html"
         res = core.export(p, html_out, self.SECRET, "html", target=self.tree)
-        text = html_out.read_text()
+        text = html_out.read_text(encoding="utf-8")
         self.assertIn("Content-Security-Policy", text)
         self.assertIn("app.log", text)
         self.assertFalse(res["clean"])
         json_out = self.dir / "r.json"
         core.export(p, json_out, self.SECRET, "json", target=self.tree)
-        report = json.loads(json_out.read_text())
+        report = json.loads(json_out.read_text(encoding="utf-8"))
         self.assertIn("limitations", report)
         self.assertEqual(len(report["hits"]), 2)
 
@@ -242,7 +242,7 @@ class SkyWatchTest(unittest.TestCase):
         p = self._watch_with(("Errors", "error", "text", "high"))
         out = self.dir / "r.html"
         core.export(p, out, self.SECRET, "html", target=self.tree)
-        body = out.read_text().split("<style>")[1]
+        body = out.read_text(encoding="utf-8").split("<style>")[1]
         self.assertNotIn("<script>alert", body)
         self.assertIn("&lt;script&gt;", body)
 
@@ -328,7 +328,7 @@ class SkyWatchTest(unittest.TestCase):
         out = self.dir / "hits.csv"
         res = core.export(p1, out, self.SECRET, "csv", target=self.tree)
         self.assertEqual(res["format"], "csv")
-        rows = list(_csv.reader(out.read_text().splitlines()))
+        rows = list(_csv.reader(out.read_text(encoding="utf-8").splitlines()))
         self.assertEqual(rows[0], ["severity", "kind", "term", "file", "line", "context"])
         data_rows = rows[1:]
         self.assertEqual(len(data_rows), 2)                       # two ERROR lines in app.log
@@ -343,7 +343,7 @@ class SkyWatchTest(unittest.TestCase):
         out = self.dir / "r.md"
         res = core.export(p1, out, self.SECRET, "md", target=self.tree)
         self.assertEqual(res["format"], "md")
-        text = out.read_text()
+        text = out.read_text(encoding="utf-8")
         self.assertTrue(text.startswith("# Watch — scan"))
         self.assertIn("## Hits (2)", text)
         self.assertIn("app.log", text)
