@@ -8,6 +8,7 @@ Qt and cryptography. Run it on each OS; PyInstaller does not cross-compile.
 """
 
 import hashlib
+import re
 import os
 from pathlib import Path
 import platform
@@ -20,7 +21,7 @@ import zipfile
 ROOT = Path(__file__).resolve().parent.parent
 DIST = ROOT / "dist"
 BUILD = ROOT / "build"
-VERSION = "0.1.0"
+VERSION = re.search(r'(?m)^version = "([^"]+)"', (ROOT / "pyproject.toml").read_text()).group(1)
 APP = "envy-skywatch"
 
 
