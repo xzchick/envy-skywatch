@@ -66,6 +66,8 @@ jobs:
   # Runs only after the cross-platform build and smoke test above have passed.
   pypi:
     needs: build
+    # Until the PyPI trusted publisher is registered, a publish failure must not fail the release.
+    continue-on-error: true
     runs-on: ubuntu-latest
     permissions:
       id-token: write
