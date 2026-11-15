@@ -161,6 +161,24 @@ Security policy and private vulnerability reporting: **[SECURITY.md](SECURITY.md
 
 Planned work for **v0.3** — signed releases, PyPI, and regex terms and an allowlist in the GUI — is tracked in [#12](https://github.com/xzchick/envy-skywatch/issues/12).
 
+## Verifying a release
+
+Each release's `SHA256SUMS.txt` is signed with [Sigstore](https://www.sigstore.dev/)
+keyless signing — there is no key to trust: the signature is bound to this repository's
+GitHub Actions identity and recorded in the public Rekor transparency log.
+
+```sh
+# 1. check your download against the signed checksums
+sha256sum -c SHA256SUMS.txt            # or: shasum -a 256 -c SHA256SUMS.txt
+
+# 2. verify the checksums file's signature (needs cosign)
+cosign verify-blob \
+  --bundle SHA256SUMS.txt.sigstore.json \
+  --certificate-identity-regexp 'https://github.com/xzchick/envy-skywatch/.github/workflows/release.yml@.*' \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+  SHA256SUMS.txt
+```
+
 ## The ENVY BLACK VEIL suite
 
 ENVY SkyWatch is one of eleven standalone apps from **ENVY BLACK VEIL** — small native desktop tools that are offline by design: no network, no accounts, no telemetry, everything encrypted at rest.
