@@ -51,6 +51,16 @@ jobs:
         with:
           path: dist
           merge-multiple: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Generate SBOM (CycloneDX)
+        run: |
+          python -m pip install --upgrade pip cyclonedx-bom
+          python -m venv sbomenv
+          ./sbomenv/bin/pip install dist/*.whl
+          cyclonedx-py environment sbomenv --of JSON -o dist/sbom.cdx.json
+          echo "SBOM components: $(grep -c '\"bom-ref\"' dist/sbom.cdx.json || true)"
       - name: Write combined checksums
         run: |
           cd dist
