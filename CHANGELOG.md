@@ -2,6 +2,10 @@
 
 All notable changes to this project. This project adheres to semantic versioning.
 
+## v0.2.2 — 2026-11-16
+
+- Attach a CycloneDX SBOM to each release (covered by the signed checksums)
+
 ## v0.2.1 — 2026-11-15
 
 - Sign release checksums with Sigstore (keyless) and attach the `.sigstore.json` bundle
