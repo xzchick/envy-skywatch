@@ -87,8 +87,9 @@ jobs:
   # Runs only after the cross-platform build and smoke test above have passed.
   pypi:
     needs: build
-    # Until the PyPI trusted publisher is registered, a publish failure must not fail the release.
-    continue-on-error: true
+    # Skipped (not failed) until the PyPI trusted publisher is registered. To turn it on:
+    #   gh variable set PYPI_PUBLISH --body true
+    if: vars.PYPI_PUBLISH == 'true'
     runs-on: ubuntu-latest
     permissions:
       id-token: write
