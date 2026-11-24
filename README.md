@@ -17,6 +17,14 @@ AES-256-GCM encrypted watchlists, a SHA-256 hash-chained scan journal, revision-
   <img src="https://img.shields.io/badge/Python-3.10+-8547e8?style=flat-square&logo=python&logoColor=white&labelColor=050713" alt="Python 3.10 or newer" />
   <img src="https://img.shields.io/badge/license-MIT-35e8ff?style=flat-square&labelColor=050713" alt="MIT license" />
 </p>
+<p align="center">
+  <a href="https://github.com/xzchick/envy-skywatch/releases/latest"><img src="https://img.shields.io/github/v/release/xzchick/envy-skywatch?style=flat-square&amp;label=release&amp;labelColor=050713&amp;color=ff3db4" alt="Latest release" /></a>
+  <a href="#verifying-a-release"><img src="https://img.shields.io/badge/releases-Sigstore_signed-35e8ff?style=flat-square&amp;labelColor=050713" alt="Releases signed with Sigstore" /></a>
+  <a href="https://github.com/xzchick/envy-skywatch/releases/latest"><img src="https://img.shields.io/badge/SBOM-CycloneDX-ac8cff?style=flat-square&amp;labelColor=050713" alt="CycloneDX SBOM attached to each release" /></a>
+  <a href="https://github.com/xzchick/homebrew-envy"><img src="https://img.shields.io/badge/brew-xzchick%2Fenvy-8547e8?style=flat-square&amp;logo=homebrew&amp;logoColor=white&amp;labelColor=050713" alt="Homebrew tap xzchick/envy" /></a>
+  <a href="#install-on-linux"><img src="https://img.shields.io/badge/Linux-one--line_install-ff3db4?style=flat-square&amp;logo=linux&amp;logoColor=white&amp;labelColor=050713" alt="One-line Linux install" /></a>
+  <a href="https://xzchick.github.io/homebrew-envy/"><img src="https://img.shields.io/badge/suite-ENVY_BLACK_VEIL-35e8ff?style=flat-square&amp;labelColor=050713" alt="Part of the ENVY BLACK VEIL suite" /></a>
+</p>
 
 <p align="center">
   <a href="#install"><b>Install</b></a> ·
