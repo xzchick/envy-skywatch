@@ -32,6 +32,11 @@ import stat
 import uuid
 from pathlib import Path
 
+try:                                   # Python 3.11+
+    from re import _parser as _re_parser
+except ImportError:                    # pragma: no cover - Python 3.10
+    import sre_parse as _re_parser
+
 # --- Shared errors and bounds ------------------------------------------------
 
 MAGIC = b"ENVYVAULT2\x00"
@@ -162,6 +167,75 @@ def _choice(value, allowed, field):
     if value not in allowed:
         raise SkyWatchError(f"{field} must be one of {', '.join(allowed)}")
     return value
+
+
+# --- Slow-regex guard ---------------------------------------------------------
+
+def regex_risk(pattern):
+    """Why a regular expression could hang a scan, or None if it looks safe.
+
+    Flags nested repetition where an unbounded repeat's body is only variable
+    repeats — ``(a+)+``, ``(\\w*)*``, ``(x+y?)+`` — the classic cause of catastrophic
+    backtracking. ``([a-z]+\\.)+`` is fine: the required dot anchors each round. It reads the pattern's structure with Python's own regex parser,
+    not by text matching. Atomic groups and possessive repeats never backtrack, so
+    they're allowed. It can't prove every pattern fast; it catches the common trap.
+    """
+    try:
+        parsed = _re_parser.parse(pattern)
+    except re.error as exc:
+        return f"it isn't a valid regular expression ({exc})"
+    unbounded = _re_parser.MAXREPEAT
+    single = ("LITERAL", "NOT_LITERAL", "IN", "ANY", "CATEGORY")
+
+    def items(sub):
+        out = list(sub)
+        while len(out) == 1 and str(out[0][0]) == "SUBPATTERN":
+            out = list(out[0][1][-1])
+        return out
+
+    def has_variable_repeat(sub):
+        for op, av in sub:
+            name = str(op)
+            if name in ("MAX_REPEAT", "MIN_REPEAT") and (av[0] != av[1] or has_variable_repeat(av[2])):
+                return True
+            if name == "SUBPATTERN" and has_variable_repeat(av[-1]):
+                return True
+            if name == "BRANCH" and any(has_variable_repeat(b) for b in av[1]):
+                return True
+        return False
+
+    def ambiguous(body):
+        # A repeated body that is only variable repeats (no required character to
+        # anchor each round) can split the same text in exponentially many ways.
+        body = items(body)
+        return has_variable_repeat(body) and not any(str(op) in single for op, _av in body)
+
+    def walk(sub):
+        for op, av in sub:
+            name = str(op)
+            if name in ("MAX_REPEAT", "MIN_REPEAT"):
+                lo, hi, inner = av
+                if hi == unbounded and ambiguous(inner):
+                    return True
+                if walk(inner):
+                    return True
+            elif name == "SUBPATTERN":
+                if walk(av[-1]):
+                    return True
+            elif name == "BRANCH":
+                if any(walk(branch) for branch in av[1]):
+                    return True
+            elif name in ("ASSERT", "ASSERT_NOT"):
+                if walk(av[1]):
+                    return True
+            # ATOMIC_GROUP and POSSESSIVE_REPEAT don't backtrack: not walked.
+        return False
+
+    if walk(parsed):
+        return ("it repeats a group that itself repeats, like (a+)+, which can take practically "
+                "forever on some lines (catastrophic backtracking). Rewrite it without the nested "
+                "repeat, e.g. a+ instead of (a+)+")
+    return None
 
 
 # --- Term and journal validation ---------------------------------------------
@@ -317,6 +391,10 @@ def add_term(source, destination, secret, label, pattern, kind="text", severity=
     if len(data["terms"]) >= MAX_TERMS:
         raise SkyWatchError(f"A watchlist holds at most {MAX_TERMS} terms")
     pattern = pattern.lower() if kind == "sha256" else pattern
+    if kind == "regex" and isinstance(pattern, str):
+        risk = regex_risk(pattern)
+        if risk:
+            raise SkyWatchError(f"That regular expression was not added: {risk}.")
     term = _validate_term({"id": str(uuid.uuid4()), "label": label, "pattern": pattern,
                            "kind": kind, "severity": severity, "created_utc": _utc()})
     data["terms"] = sorted(data["terms"] + [term], key=lambda t: t["id"])

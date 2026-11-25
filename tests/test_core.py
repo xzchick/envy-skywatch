@@ -287,6 +287,27 @@ class SkyWatchTest(unittest.TestCase):
         with self.assertRaises(SkyWatchError):
             core.add_term(p0, self.seq(), self.SECRET, "bad", "(unclosed", kind="regex")
 
+    def test_slow_regex_guard_flags_nested_repeats_only(self):
+        for risky in (r"(a+)+$", r"(\w*)*", r"(x+y?)+", r"^(\d+)*$", r"(\w+\s?)+$", r"((a+))+"):
+            self.assertIsNotNone(core.regex_risk(risky), risky)
+        for fine in (r"(?:ab|cd)+", r"\b\d{3}-\d{4}\b", r"pass(word)?\s*[:=]", r"(a{2}){3}", r"(?>a+)+",
+                     r"(a++)+", r"([a-z]+\.)+com", r"(\d+\s)+", r"AKIA[0-9A-Z]{16}",
+                     r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}"):
+            self.assertIsNone(core.regex_risk(fine), fine)
+        self.assertIn("valid", core.regex_risk("(unclosed"))
+
+    def test_slow_regex_refused_at_add_but_existing_terms_still_load(self):
+        p0 = self.watchlist()
+        with self.assertRaisesRegex(SkyWatchError, "catastrophic backtracking"):
+            core.add_term(p0, self.seq(), self.SECRET, "slow", r"(a+)+$", kind="regex")
+        # The guard is only at add time: a watchlist saved before it existed still opens and scans.
+        data, _ = core._load(p0, self.SECRET)
+        data["terms"] = [{"id": "00000000-0000-4000-8000-000000000001", "label": "legacy", "pattern": r"(e+)+x",
+                          "kind": "regex", "severity": "low", "created_utc": data["created_utc"]}]
+        legacy = self.seq()
+        core._write(legacy, data, self.SECRET)
+        self.assertEqual(core.inspect(legacy, self.SECRET)["terms"][0]["label"], "legacy")
+
     # ----- allowlist (v0.2) --------------------------------------------
     def test_allowlist_moves_hits_to_allowed(self):
         p0 = self.watchlist()

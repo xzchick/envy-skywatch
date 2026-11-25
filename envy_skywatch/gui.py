@@ -165,6 +165,7 @@ def _build():
             self.data = None        # decrypted, validated watchlist dict
             self.report = None      # the latest scan result
             self.last_target = None # the last scanned file/folder, for Record / Export
+            self.diff = None        # the latest comparison against the last recorded scan
             self.setWindowTitle("ENVY SkyWatch")
             self.resize(1200, 880)
             self.setMinimumSize(1000, 740)
@@ -175,7 +176,7 @@ def _build():
             body = QWidget(); body.setObjectName("body")
             bl = QVBoxLayout(body); bl.setContentsMargins(22, 14, 22, 16); bl.setSpacing(10)
 
-            intro = QLabel("Keep a watchlist of terms — keywords or file hashes — then scan a file or folder "
+            intro = QLabel("Keep a watchlist of terms — keywords, regular expressions or file hashes — then scan a file or folder "
                            "and read every hit with its file, line and context. Every save is a new revision. Nothing is sent.")
             intro.setObjectName("status"); intro.setWordWrap(True); bl.addWidget(intro)
 
@@ -188,6 +189,7 @@ def _build():
                                            ("Scan folder", self.scan_folder, "go"),
                                            ("Scan file", self.scan_file, "go"),
                                            ("Record scan", self.record, "pick"),
+                                           ("Compare", self.compare_last, "pick"),
                                            ("Export", self.export_report, "pick")):
                 b = QPushButton(caption); b.setObjectName(name)
                 b.setCursor(Qt.CursorShape.PointingHandCursor); b.clicked.connect(handler)
@@ -204,9 +206,22 @@ def _build():
             self.t_hits = make_table(["Severity", "Term", "Kind", "File", "Line", "Context"])
             self.t_terms = make_table(["Label", "Pattern", "Kind", "Severity", "Added"])
             self.t_history = make_table(["Scanned UTC", "Target", "Files", "Hits", "H / M / L"])
+            self.t_allow = make_table(["Allowed file pattern"])
+            allow_tab = QWidget(); al = QVBoxLayout(allow_tab); al.setContentsMargins(0, 8, 0, 0)
+            allow_note = QLabel("Files you've reviewed as benign. They're still scanned, but their hits are "
+                                "listed as allowed, not as alerts. Patterns are globs, like logs/*.log or *.min.js.")
+            allow_note.setObjectName("status"); allow_note.setWordWrap(True); al.addWidget(allow_note)
+            allow_row = QHBoxLayout()
+            for caption, handler, name in (("Allow files…", self.allow_files, "go"),
+                                           ("Remove from allowlist", self.unallow_selected, "pick")):
+                b = QPushButton(caption); b.setObjectName(name)
+                b.setCursor(Qt.CursorShape.PointingHandCursor); b.clicked.connect(handler)
+                allow_row.addWidget(b)
+            allow_row.addStretch(1); al.addLayout(allow_row); al.addWidget(self.t_allow, 1)
             self.views.addTab(self.t_hits, "Hits")
             self.views.addTab(self.t_terms, "Watchlist")
             self.views.addTab(self.t_history, "History")
+            self.views.addTab(allow_tab, "Allowlist")
             bl.addWidget(self.views, 1)
 
             self.path_label = QLabel(""); self.path_label.setObjectName("foot")
@@ -278,16 +293,17 @@ def _build():
             except SkyWatchError as exc:
                 self._warn(str(exc)); return
             self.watchlist, self.secret, self.data = path, secret, data
-            self.report, self.last_target = None, None
+            self.report, self.last_target, self.diff = None, None, None
             self._set_enabled(True)
             self.t_hits.setRowCount(0)
             self._refresh_header()
             self._fill_terms(data["terms"])
             self._fill_history(data["journal"])
+            self._fill_allowlist(data["allowlist"])
 
         def lock(self):
-            self.watchlist = self.secret = self.data = self.report = self.last_target = None
-            for t in (self.t_hits, self.t_terms, self.t_history):
+            self.watchlist = self.secret = self.data = self.report = self.last_target = self.diff = None
+            for t in (self.t_hits, self.t_terms, self.t_history, self.t_allow):
                 t.setRowCount(0)
             self.mon_header.setPlainText("Locked. The passphrase was cleared from memory.")
             self.path_label.setText("")
@@ -299,31 +315,89 @@ def _build():
             self.last_target = target
 
         # ----- terms --------------------------------------------------------
+        KIND_CHOICES = {"keyword": "text", "regular expression": "regex", "file SHA-256": "sha256"}
+        KIND_LABEL = {"text": "keyword", "regex": "regular expression", "sha256": "file SHA-256"}
+
         def add_term(self):
             if not self.data:
                 return
             label, ok = QInputDialog.getText(self, "Add term", "Label (e.g. Error lines):")
             if not ok or not label.strip():
                 return
-            kind, ok = QInputDialog.getItem(self, "Kind", "Match a keyword, or a file by its SHA-256?",
-                                            ["keyword", "file SHA-256"], 0, False)
+            kind, ok = QInputDialog.getItem(self, "Kind", "Match a keyword, a regular expression, or a file by its SHA-256?",
+                                            list(self.KIND_CHOICES), 0, False)
             if not ok:
                 return
-            k = "text" if kind == "keyword" else "sha256"
-            prompt = "Keyword to watch for (case-insensitive):" if k == "text" else "64-character SHA-256:"
+            k = self.KIND_CHOICES[kind]
+            prompt = {"text": "Keyword to watch for (case-insensitive):",
+                      "regex": "Regular expression (case-insensitive; e.g. AKIA[0-9A-Z]{16}).\n"
+                               "Patterns that could hang a scan, like (a+)+, are refused:",
+                      "sha256": "64-character SHA-256:"}[k]
             pattern, ok = QInputDialog.getText(self, "Pattern", prompt)
             if not ok or not pattern.strip():
                 return
+            if k == "regex":
+                risk = core.regex_risk(pattern.strip())
+                if risk:
+                    self._warn(f"That regular expression can't be used: {risk}.", title="Regular expression")
+                    return
             sev, ok = QInputDialog.getItem(self, "Severity", "Severity:", ["high", "medium", "low"], 1, False)
             if not ok:
                 return
+            self.add_term_values(label, k, pattern, sev)
+
+        def add_term_values(self, label, kind, pattern, severity):
+            """Add a term (kind: text, regex or sha256) as a new revision. True on success."""
             dest = self._next_revision_path()
             try:
-                core.add_term(self.watchlist, dest, self.secret, label.strip(), pattern.strip(), k, sev)
+                core.add_term(self.watchlist, dest, self.secret, label.strip(), pattern.strip(), kind, severity)
             except (SkyWatchError, OSError) as exc:
-                self._warn(str(exc)); return
+                self._warn(str(exc)); return False
             self._reopen(dest)
             self.views.setCurrentIndex(1)
+            return True
+
+        # ----- allowlist ----------------------------------------------------
+        def allow_files(self):
+            if not self.data:
+                return
+            pattern, ok = QInputDialog.getText(self, "Allow files",
+                                               "Glob for files you've reviewed as benign (e.g. logs/*.log):")
+            if ok and pattern.strip():
+                self.allow_pattern(pattern.strip())
+
+        def allow_pattern(self, pattern):
+            dest = self._next_revision_path()
+            try:
+                core.allow(self.watchlist, dest, self.secret, pattern)
+            except (SkyWatchError, OSError) as exc:
+                self._warn(str(exc)); return False
+            self._reopen(dest)
+            self.views.setCurrentIndex(3)
+            return True
+
+        def unallow_selected(self):
+            if not self.data:
+                return
+            row = self.t_allow.currentRow()
+            item = self.t_allow.item(row, 0) if row >= 0 else None
+            if item is None:
+                self._warn("Select a pattern in the Allowlist tab first."); return
+            if QMessageBox.question(self, "Remove from allowlist",
+                                    f"Stop allowing “{item.text()}”? Its hits will count as alerts again.") \
+                    != QMessageBox.StandardButton.Yes:
+                return
+            self.unallow_pattern(item.text())
+
+        def unallow_pattern(self, pattern):
+            dest = self._next_revision_path()
+            try:
+                core.unallow(self.watchlist, dest, self.secret, pattern)
+            except (SkyWatchError, OSError) as exc:
+                self._warn(str(exc)); return False
+            self._reopen(dest)
+            self.views.setCurrentIndex(3)
+            return True
 
         def remove_term(self):
             if not self.data:
@@ -361,7 +435,7 @@ def _build():
                 report = core.scan(self.watchlist, self.secret, target)
             except (SkyWatchError, OSError) as exc:
                 self._warn(str(exc)); return
-            self.report, self.last_target = report, target
+            self.report, self.last_target, self.diff = report, target, None
             self._fill_hits(report)
             self.views.setCurrentIndex(0)
             self._refresh_header()
@@ -381,6 +455,44 @@ def _build():
             self.views.setCurrentIndex(2)
             self._warn(f"Recorded a scan of {result['recorded_scan']['files_scanned']} file(s) as revision "
                        f"{result['revision']}.", icon=QMessageBox.Icon.Information, title="Scan recorded")
+
+        def compare_last(self):
+            if not self.data:
+                return
+            target = self.last_target
+            if not target:
+                target = QFileDialog.getExistingDirectory(self, "Choose the folder to compare")
+                if not target:
+                    return
+            diff = self.compare(target)
+            if diff is None:
+                return
+            self._warn(self._diff_text(diff), icon=QMessageBox.Icon.Information, title="Compared with the last record")
+
+        def compare(self, target):
+            """Scan `target` now and compare with the last recorded scan. Returns the diff."""
+            try:
+                diff = core.diff_scan(self.watchlist, self.secret, target)
+            except (SkyWatchError, OSError) as exc:
+                self._warn(str(exc)); return None
+            self.diff, self.last_target = diff, target
+            self._refresh_header()
+            return diff
+
+        @staticmethod
+        def _diff_text(diff):
+            if not diff["has_baseline"]:
+                return ("There's no recorded scan to compare against yet. Scan, then press Record scan; "
+                        "later comparisons show what changed since then.")
+            d, prev = diff["delta"], diff["previous"]
+            def signed(n):
+                return f"+{n}" if n > 0 else str(n)
+            head = ("More hits than the last recorded scan." if diff["regressed"]
+                    else "No more hits than the last recorded scan.")
+            return (f"{head}\n\nNow: {diff['current']['hits']} hits    Recorded {diff['previous_recorded_utc']}: "
+                    f"{prev['hits']} hits\nChange: {signed(d['hits'])} total  ·  high {signed(d['high'])}  ·  "
+                    f"medium {signed(d['medium'])}  ·  low {signed(d['low'])}\n\n"
+                    "A rise means more literal matches than before, not that anything new matters.")
 
         def export_report(self):
             if not self.data:
@@ -427,9 +539,22 @@ def _build():
             else:
                 s = r["by_severity"]
                 verdict = f"{r['hit_count']} hits ({s['high']} high, {s['medium']} medium, {s['low']} low)"
+            change = ""
+            if self.diff is not None:
+                if not self.diff["has_baseline"]:
+                    change = "  ·  nothing recorded to compare with"
+                else:
+                    n = self.diff["delta"]["hits"]
+                    if n > 0:
+                        change = f"  ·  ▲ {n} more {'hit' if n == 1 else 'hits'} than the last record"
+                    elif n < 0:
+                        change = f"  ·  ▼ {-n} fewer {'hit' if n == -1 else 'hits'} than the last record"
+                    else:
+                        change = "  ·  = same hits as the last record"
+            allowed = f"  ·  {r['allowed_count']} allowed" if r is not None and r.get("allowed_count") else ""
             self.mon_header.setPlainText(
-                f"{d['title']}  ·  revision {d['revision']}  ·  {len(d['terms'])} terms  ·  {verdict}\n"
-                f"watchlist: {d['watch_id']}")
+                f"{d['title']}  ·  revision {d['revision']}  ·  {len(d['terms'])} terms  ·  {verdict}{allowed}{change}\n"
+                f"watchlist: {d['watch_id']}  ·  {len(d['allowlist'])} allowed pattern{'' if len(d['allowlist']) == 1 else 's'}")
             if self.watchlist:
                 self.path_label.setText(str(self.watchlist) + (f"   —   last scan: {self.last_target}"
                                                                if self.last_target else ""))
@@ -441,16 +566,18 @@ def _build():
             return item
 
         def _fill_hits(self, report):
-            t = self.t_hits; rows = report["hits"]; t.setRowCount(len(rows))
-            for i, h in enumerate(rows):
-                t.setItem(i, 0, self._cell(h["severity"], SEV_COLOR[h["severity"]]))
-                t.setItem(i, 1, self._cell(h["label"], INK))
-                t.setItem(i, 2, self._cell(h["kind"]))
+            t = self.t_hits; rows = report["hits"]; allowed = report.get("allowed", [])
+            t.setRowCount(len(rows) + len(allowed))
+            for i, (h, is_allowed) in enumerate([(h, False) for h in rows] + [(h, True) for h in allowed]):
+                t.setItem(i, 0, self._cell("allowed" if is_allowed else h["severity"],
+                                           MUTED if is_allowed else SEV_COLOR[h["severity"]]))
+                t.setItem(i, 1, self._cell(h["label"], MUTED if is_allowed else INK))
+                t.setItem(i, 2, self._cell(self.KIND_LABEL.get(h["kind"], h["kind"])))
                 t.setItem(i, 3, self._cell(h["file"]))
-                t.setItem(i, 4, self._cell(h["line"] if h["kind"] == "text" else "—"))
+                t.setItem(i, 4, self._cell(h["line"] if h["kind"] in ("text", "regex") else "—"))
                 t.setItem(i, 5, self._cell(h["context"]))
             t.resizeColumnsToContents(); t.horizontalHeader().setStretchLastSection(True)
-            if not rows:
+            if not rows and not allowed:
                 t.setRowCount(1)
                 t.setItem(0, 0, self._cell("clean", GREEN))
                 t.setItem(0, 1, self._cell("No hits in the last scan."))
@@ -463,10 +590,16 @@ def _build():
                 t.setItem(i, 0, label_item)
                 shown = (tr["pattern"][:16] + "…") if tr["kind"] == "sha256" else tr["pattern"]
                 t.setItem(i, 1, self._cell(shown))
-                t.setItem(i, 2, self._cell("keyword" if tr["kind"] == "text" else "file SHA-256"))
+                t.setItem(i, 2, self._cell(self.KIND_LABEL.get(tr["kind"], tr["kind"])))
                 t.setItem(i, 3, self._cell(tr["severity"], SEV_COLOR[tr["severity"]]))
                 t.setItem(i, 4, self._cell(tr["created_utc"]))
             t.resizeColumnsToContents(); t.horizontalHeader().setStretchLastSection(True)
+
+        def _fill_allowlist(self, patterns):
+            t = self.t_allow; t.setRowCount(len(patterns))
+            for i, pat in enumerate(patterns):
+                t.setItem(i, 0, self._cell(pat, CYAN))
+            t.horizontalHeader().setStretchLastSection(True)
 
         def _fill_history(self, journal):
             t = self.t_history; t.setRowCount(len(journal))
