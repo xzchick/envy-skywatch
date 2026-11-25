@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "envy-skywatch"
-version = "0.2.2"
+version = "0.2.3"
 description = "ENVY SkyWatch: encrypted watchlists and offline content scanning — watch for what matters, in a native app window"
 readme = "README.md"
 requires-python = ">=3.10"
